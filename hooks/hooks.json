@@ -1,0 +1,27 @@
+{
+  "SessionStart": [
+    {
+      "matcher": "startup|resume|compact",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"$CLAUDE_PROJECT_DIR/src/loader.js\"",
+          "timeout": 5,
+          "statusMessage": "Loading brain..."
+        }
+      ]
+    }
+  ],
+  "PreCompact": [
+    {
+      "hooks": [
+        {
+          "type": "agent",
+          "prompt": "Context is being compacted. Save important information to ~/.claude/brain/.\n\nTIERS:\n- T1 user.md (40 lines max): User traits, communication style\n- T1 preferences.md (40 lines max): Code style, tools, patterns\n- T2 projects/{name}/context.md (120 lines max): Current project state\n- T3 projects/{name}/archive/{date}.md: Session summary if significant\n\nPROCESS:\n1. Read existing brain files\n2. Identify NEW learnings from this session\n3. UPDATE (not append) - replace stale info\n4. Enforce size limits - move overflow to archive\n\nFocus on: user preferences learned, decisions made + rationale, current project state.",
+          "timeout": 120,
+          "statusMessage": "Saving to brain..."
+        }
+      ]
+    }
+  ]
+}

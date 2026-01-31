@@ -1,0 +1,18 @@
+{
+  "name": "cc-brain",
+  "version": "0.1.0",
+  "description": "Persistent memory system for Claude Code - remembers context across sessions",
+  "type": "module",
+  "scripts": {
+    "install-hooks": "node scripts/install-hooks.js",
+    "test": "node scripts/test-brain.js"
+  },
+  "keywords": [
+    "claude-code",
+    "memory",
+    "context",
+    "ai"
+  ],
+  "author": "",
+  "license": "MIT"
+}

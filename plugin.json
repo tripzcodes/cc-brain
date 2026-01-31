@@ -1,0 +1,11 @@
+{
+  "name": "cc-brain",
+  "version": "0.1.0",
+  "description": "Persistent memory system for Claude Code",
+  "skills": [
+    "skills/save.md",
+    "skills/recall.md",
+    "skills/brain.md"
+  ],
+  "hooks": "hooks/hooks.json"
+}
