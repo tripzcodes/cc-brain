@@ -3,17 +3,43 @@
   "version": "0.1.0",
   "description": "Persistent memory system for Claude Code - remembers context across sessions",
   "type": "module",
+  "bin": {
+    "cc-brain": "./bin/cc-brain.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "scripts",
+    "skills",
+    "hooks",
+    "brain",
+    "plugin.json"
+  ],
   "scripts": {
-    "install": "bun scripts/install.js",
-    "uninstall": "bun scripts/uninstall.js",
-    "test": "bun scripts/test-brain.js"
+    "postinstall": "node scripts/install.js",
+    "preuninstall": "node scripts/uninstall.js",
+    "test": "node src/loader.js"
   },
   "keywords": [
+    "claude",
     "claude-code",
     "memory",
     "context",
-    "ai"
+    "ai",
+    "persistent",
+    "brain"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tripzero/cc-brain.git"
+  },
+  "homepage": "https://github.com/tripzero/cc-brain#readme",
+  "bugs": {
+    "url": "https://github.com/tripzero/cc-brain/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
