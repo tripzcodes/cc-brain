@@ -1,11 +1,11 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 /**
  * Install cc-brain
  * Sets up brain directory and hooks
  */
 
-import { existsSync, mkdirSync, copyFileSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, copyFileSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
@@ -26,6 +26,18 @@ for (const dir of dirs) {
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
     console.log(`Created: ${dir}`);
+  }
+}
+
+// Clean up legacy files from previous versions
+const legacyFiles = [
+  join(BRAIN_DIR, 'load-brain.sh'),
+];
+
+for (const file of legacyFiles) {
+  if (existsSync(file)) {
+    unlinkSync(file);
+    console.log(`Removed: ${file} (legacy)`);
   }
 }
 
@@ -54,7 +66,7 @@ const hooks = JSON.parse(readFileSync(join(PROJECT_ROOT, 'hooks', 'hooks.json'),
 
 // Update loader path to absolute (forward slashes for cross-platform)
 const loaderPath = join(PROJECT_ROOT, 'src', 'loader.js').replace(/\\/g, '/');
-hooks.SessionStart[0].hooks[0].command = `node "${loaderPath}"`;
+hooks.SessionStart[0].hooks[0].command = `bun "${loaderPath}"`;
 
 // Merge hooks (preserve existing hooks, add ours)
 settings.hooks = settings.hooks || {};
