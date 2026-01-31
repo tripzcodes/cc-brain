@@ -13,29 +13,32 @@ Search Tier 3 archive for historical context.
 
 The user wants to recall: `$ARGUMENTS`
 
-1. Find the current project name from $CLAUDE_PROJECT_DIR or cwd
+1. **Run the search**:
+```bash
+bun src/recall.js "$ARGUMENTS"
+```
 
-2. Search the archive at:
-   `~/.claude/brain/projects/{project}/archive/`
+2. **For regex patterns or context**:
+```bash
+bun src/recall.js "$ARGUMENTS" --context
+```
 
-3. Look for:
-   - Session summaries matching the query
-   - Past decisions related to the topic
-   - Historical context that might be relevant
-
-4. Also check T2 context.md for recent related info
-
-5. Present findings concisely:
+3. **Present the results** to the user:
    - What was found
-   - When it was recorded (from filename dates)
+   - When it was recorded (from dates)
    - Key relevant details
 
-6. If nothing found, say so and suggest what might help
+4. **If nothing found**, let the user know and suggest:
+   - Different search terms
+   - Checking T2 context.md for recent info
 
-## Example Usage
+## Examples
 
 User: `/recall authentication`
-→ Search archive for anything about auth decisions, implementations, issues
+→ Searches archive for anything about auth decisions, implementations, issues
 
-User: `/recall why did we choose X`
+User: `/recall why did we choose bun`
 → Look for decision rationale in archive
+
+User: `/recall API.*endpoint`
+→ Regex search for API endpoint mentions
