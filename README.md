@@ -10,18 +10,38 @@ Claude Code sessions are ephemeral - when context fills up or you start a new se
 - **Saving** important learnings before context compaction
 - **Searching** past sessions for decisions and context
 
-## Quick Start
+## Installation
+
+Choose your preferred method:
+
+### Option 1: npm (recommended)
 
 ```bash
-# Clone
-git clone https://github.com/yourusername/cc-brain.git
-cd cc-brain
-
-# Install hooks to Claude Code
-bun scripts/install.js
+npm install -g cc-brain
+cc-brain install
 ```
 
-That's it. Start a new Claude Code session and your brain will be loaded automatically.
+### Option 2: npx/bunx (no install)
+
+```bash
+npx cc-brain install
+# or
+bunx cc-brain install
+```
+
+### Option 3: Claude Plugin
+
+```bash
+claude plugins add cc-brain
+```
+
+### Option 4: Git Clone
+
+```bash
+git clone https://github.com/tripzero/cc-brain.git
+cd cc-brain
+node scripts/install.js
+```
 
 ## Memory Tiers
 
@@ -49,40 +69,34 @@ That's it. Start a new Claude Code session and your brain will be loaded automat
 | `/recall <query>` | Search archive for past context |
 | `/brain` | View current brain state |
 
-## CLI Tools
+## CLI
 
 ```bash
-# Project Identity
-bun src/project-id.js --init     # Create stable .brain-id
+cc-brain install          # Install hooks
+cc-brain uninstall        # Remove hooks
+cc-brain uninstall --purge # Remove everything
 
-# Archive Search
-bun src/recall.js "query"        # Search archive
-bun src/recall.js "regex.*"      # Regex search
+cc-brain recall "query"   # Search archive
+cc-brain archive list     # List archive entries
+cc-brain archive stats    # Show statistics
+cc-brain archive prune --keep 20  # Keep last 20
 
-# Archive Management
-bun src/archive.js list          # List entries
-bun src/archive.js stats         # Show statistics
-bun src/archive.js prune --keep 20  # Keep last 20
-
-# Structured Saving
-bun src/saver.js --dry-run --json '{"t2": {"focus": "testing"}}'
-bun src/saver.js --json '{"t2": {"focus": "testing"}}'
+cc-brain project-id --init  # Create stable .brain-id
+cc-brain save --dry-run --json '{"t2": {"focus": "testing"}}'
 ```
 
 ## How It Works
 
-1. **SessionStart hook** runs `loader.js`:
+1. **SessionStart hook** runs on every session:
    - Loads T1 (user profile + preferences)
    - Loads T2 (current project context)
    - Auto-prunes archives older than 90 days
-   - Outputs everything wrapped in `<brain>` tags
 
-2. **PreCompact hook** triggers agent to save:
+2. **PreCompact hook** triggers before context dies:
    - Analyzes session for important learnings
-   - Saves to appropriate tier using structured saver
-   - Creates archive entry if significant work done
+   - Saves to appropriate tier using structured format
 
-3. **Manual control** via skills:
+3. **Skills** for manual control:
    - `/save` - capture context anytime
    - `/recall` - search past sessions
    - `/brain` - see what's loaded
@@ -92,22 +106,27 @@ bun src/saver.js --json '{"t2": {"focus": "testing"}}'
 By default, projects are identified by directory name. For stable identity that survives renames:
 
 ```bash
-bun src/project-id.js --init
+cc-brain project-id --init
 ```
 
 This creates a `.brain-id` file with a UUID. Commit it to your repo.
 
-## Install / Uninstall
+## Uninstall
 
 ```bash
-bun scripts/install.js           # Install hooks
-bun scripts/uninstall.js         # Remove hooks (keeps data)
-bun scripts/uninstall.js --purge # Remove everything
+cc-brain uninstall          # Remove hooks, keep brain data
+cc-brain uninstall --purge  # Remove everything
+```
+
+Or if installed via npm:
+
+```bash
+npm uninstall -g cc-brain
 ```
 
 ## Requirements
 
-- [Bun](https://bun.sh) runtime
+- Node.js >= 18 or [Bun](https://bun.sh)
 - [Claude Code](https://github.com/anthropics/claude-code) CLI
 
 ## License
