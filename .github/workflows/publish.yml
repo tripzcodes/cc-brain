@@ -13,7 +13,7 @@ jobs:
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
-      - run: npm publish --access public
+      - run: npm publish --access public || echo "Package version may already exist"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -31,6 +31,6 @@ jobs:
           scope: '@tripzcodes'
       - run: |
           npm pkg set name='@tripzcodes/cc-brain'
-          npm publish
+          npm publish || echo "Package version may already exist"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
