@@ -14,29 +14,29 @@
 </p>
 
 <p align="center">
-  <a href="#-installation">Installation</a> •
-  <a href="#-how-it-works">How It Works</a> •
-  <a href="#-commands">Commands</a> •
-  <a href="#-cli">CLI</a>
+  <a href="#installation">Installation</a> •
+  <a href="#how-it-works">How It Works</a> •
+  <a href="#commands">Commands</a> •
+  <a href="#cli">CLI</a>
 </p>
 
 ---
 
-## ⚡ The Problem
+## The Problem
 
 Claude Code sessions are **ephemeral**. When context fills up or you start a new session, everything is forgotten. Your preferences, project decisions, debugging history — gone.
 
-## 💡 The Solution
+## The Solution
 
 cc-brain creates a persistent memory layer that:
 
-- 📥 **Loads** your profile and project context on every session
-- 💾 **Saves** important learnings before context compaction
-- 🔍 **Searches** past sessions for decisions and context
+- **Loads** your profile and project context on every session
+- **Saves** important learnings before context compaction
+- **Searches** past sessions for decisions and context
 
 ---
 
-## 📦 Installation
+## Installation
 
 ### npm (recommended)
 ```bash
@@ -61,25 +61,25 @@ claude plugins add cc-brain
 
 ---
 
-## 🧩 How It Works
+## How It Works
 
 ```
 ~/.claude/brain/
-├── 📄 user.md              # Your profile (always loaded)
-├── 📄 preferences.md       # Code preferences (always loaded)
-└── 📁 projects/{id}/
-    ├── 📄 context.md       # Current project state
-    └── 📁 archive/         # Session history
-        └── 📄 2025-01-31.md
+├── user.md              # Your profile (always loaded)
+├── preferences.md       # Code preferences (always loaded)
+└── projects/{id}/
+    ├── context.md       # Current project state
+    └── archive/         # Session history
+        └── 2025-01-31.md
 ```
 
 ### Memory Tiers
 
 | Tier | Content | Limit | Loaded |
 |:----:|---------|:-----:|:------:|
-| **T1** | User identity & preferences | 80 lines | ✅ Always |
-| **T2** | Project context | 120 lines | ✅ Current project |
-| **T3** | Archive history | ∞ | 🔍 On-demand |
+| **T1** | User identity & preferences | 80 lines | Always |
+| **T2** | Project context | 120 lines | Current project |
+| **T3** | Archive history | Unlimited | On-demand |
 
 ### Lifecycle
 
@@ -96,19 +96,19 @@ claude plugins add cc-brain
 
 ---
 
-## 🎯 Commands
+## Commands
 
 Use these skills in Claude Code:
 
 | Command | Description |
 |---------|-------------|
-| `/save` | 💾 Save session context to brain |
-| `/recall <query>` | 🔍 Search archive for past context |
-| `/brain` | 👁️ View current brain state |
+| `/save` | Save session context to brain |
+| `/recall <query>` | Search archive for past context |
+| `/brain` | View current brain state |
 
 ---
 
-## 🔧 CLI
+## CLI
 
 ```bash
 # Setup
@@ -132,7 +132,7 @@ cc-brain save --json '{"t2": {"focus": "testing"}}'
 
 ---
 
-## 🆔 Project Identity
+## Project Identity
 
 By default, projects are identified by directory name. For stable identity that survives renames:
 
@@ -144,7 +144,7 @@ Creates a `.brain-id` file with a UUID. Commit it to your repo.
 
 ---
 
-## 🗑️ Uninstall
+## Uninstall
 
 ```bash
 cc-brain uninstall            # Remove hooks, keep data
@@ -153,19 +153,13 @@ cc-brain uninstall --purge    # Remove everything
 
 ---
 
-## 📋 Requirements
+## Requirements
 
 - **Node.js** >= 18 or [Bun](https://bun.sh)
 - [Claude Code](https://github.com/anthropics/claude-code)
 
 ---
 
-## 📄 License
+## License
 
 MIT © [tripzcodes](https://github.com/tripzcodes)
-
----
-
-<p align="center">
-  <sub>Built with 🧠 for Claude Code users</sub>
-</p>
