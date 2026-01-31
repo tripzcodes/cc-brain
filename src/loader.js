@@ -1,22 +1,27 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 /**
  * Brain Loader
  * Runs on SessionStart - injects persistent memory into context
  *
  * TIERS:
- *   T1 (always):    user.md, preferences.md         ~30 lines each
- *   T2 (project):   projects/{name}/context.md      ~100 lines
- *   T3 (on-demand): projects/{name}/archive/        never auto-loaded
+ *   T1 (always):    user.md, preferences.md         ~40 lines each
+ *   T2 (project):   projects/{id}/context.md        ~120 lines
+ *   T3 (on-demand): projects/{id}/archive/          never auto-loaded
+ *
+ * Features:
+ *   - Uses .brain-id for stable project identity
+ *   - Auto-prunes archive entries older than 90 days (with warning)
  */
 
-import { readFileSync, existsSync, statSync } from 'fs';
+import { readFileSync, existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
+import { getProjectId, getProjectBrainPath } from './project-id.js';
 
 const BRAIN_DIR = process.env.CC_BRAIN_DIR || join(homedir(), '.claude', 'brain');
-const PROJECT_DIR = process.env.CLAUDE_PROJECT_DIR || process.cwd();
-const PROJECT_NAME = PROJECT_DIR.split(/[/\\]/).pop();
+const PROJECT_ID = getProjectId();
+const PROJECT_PATH = getProjectBrainPath();
 
 // Size limits (lines)
 const LIMITS = {
@@ -24,6 +29,9 @@ const LIMITS = {
   preferences: 40,
   context: 120
 };
+
+// Auto-prune settings
+const AUTO_PRUNE_DAYS = 90;
 
 function readIfExists(path, limit = null) {
   if (!existsSync(path)) return null;
@@ -40,10 +48,59 @@ function readIfExists(path, limit = null) {
   return content;
 }
 
+function ensureProjectDir() {
+  const archiveDir = join(PROJECT_PATH, 'archive');
+
+  if (!existsSync(PROJECT_PATH)) {
+    mkdirSync(PROJECT_PATH, { recursive: true });
+  }
+  if (!existsSync(archiveDir)) {
+    mkdirSync(archiveDir, { recursive: true });
+  }
+}
+
+function autoPruneArchive() {
+  const archiveDir = join(PROJECT_PATH, 'archive');
+  if (!existsSync(archiveDir)) return [];
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - AUTO_PRUNE_DAYS);
+
+  const deleted = [];
+
+  try {
+    const files = readdirSync(archiveDir).filter(f => f.endsWith('.md'));
+
+    for (const file of files) {
+      const path = join(archiveDir, file);
+      const stat = statSync(path);
+
+      if (stat.mtime < cutoff) {
+        unlinkSync(path);
+        deleted.push(file);
+      }
+    }
+  } catch (e) {
+    // Ignore errors during auto-prune
+  }
+
+  return deleted;
+}
+
 function loadBrain() {
+  ensureProjectDir();
+
+  // Auto-prune old archive entries
+  const pruned = autoPruneArchive();
+
   const parts = [];
 
   parts.push('<brain>');
+
+  // Show pruned files warning
+  if (pruned.length > 0) {
+    parts.push(`[Auto-pruned ${pruned.length} archive entries older than ${AUTO_PRUNE_DAYS} days: ${pruned.join(', ')}]\n`);
+  }
 
   // ═══════════════════════════════════════════
   // TIER 1: Always loaded (core understanding)
@@ -63,10 +120,10 @@ function loadBrain() {
   // TIER 2: Project context (current project)
   // ═══════════════════════════════════════════
 
-  const projectContext = join(BRAIN_DIR, 'projects', PROJECT_NAME, 'context.md');
+  const projectContext = join(PROJECT_PATH, 'context.md');
   const context = readIfExists(projectContext, LIMITS.context);
   if (context && context.trim()) {
-    parts.push(`## Project: ${PROJECT_NAME}\n`);
+    parts.push(`## Project: ${PROJECT_ID}\n`);
     parts.push(context);
   }
 
@@ -74,9 +131,12 @@ function loadBrain() {
   // TIER 3: Archive (NOT loaded, just noted)
   // ═══════════════════════════════════════════
 
-  const archiveDir = join(BRAIN_DIR, 'projects', PROJECT_NAME, 'archive');
+  const archiveDir = join(PROJECT_PATH, 'archive');
   if (existsSync(archiveDir)) {
-    parts.push(`\n[Archive available at: ${archiveDir}]`);
+    const archiveFiles = readdirSync(archiveDir).filter(f => f.endsWith('.md'));
+    if (archiveFiles.length > 0) {
+      parts.push(`\n[Archive: ${archiveFiles.length} entries. Use /recall to search.]`);
+    }
   }
 
   parts.push('</brain>');
@@ -87,9 +147,8 @@ function loadBrain() {
 const brain = loadBrain();
 
 // Only output if there's actual content
-if (brain.replace(/<\/?brain>/g, '').trim()) {
+if (brain.replace(/<\/?brain>/g, '').replace(/\[.*?\]/g, '').trim()) {
   console.log(brain);
   console.log('\n---');
-  console.log('Above is your persistent memory. Update brain files when you learn important new info.');
-  console.log('Tier 3 archive is available for deep history if needed.');
+  console.log('Above is your persistent memory. Use /save to update, /recall to search archive.');
 }
