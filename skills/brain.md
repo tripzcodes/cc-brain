@@ -10,24 +10,46 @@ Show the user what's currently in persistent memory.
 
 ## Instructions
 
-1. Read and display:
+1. **Show Tier 1** (always loaded):
+```bash
+cat ~/.claude/brain/user.md
+cat ~/.claude/brain/preferences.md
+```
 
-**Tier 1 (Always Loaded):**
-- `~/.claude/brain/user.md`
-- `~/.claude/brain/preferences.md`
+2. **Show Tier 2** (current project):
+```bash
+bun src/project-id.js --path
+# Then read context.md from that path
+```
 
-**Tier 2 (Current Project):**
-- `~/.claude/brain/projects/{project}/context.md`
+3. **Show Tier 3 stats**:
+```bash
+bun src/archive.js stats
+```
 
-**Tier 3 (Archive):**
-- List files in `~/.claude/brain/projects/{project}/archive/`
-- Just show filenames/dates, not full content
+4. **Format output** showing:
+   - T1: User profile and preferences
+   - T2: Current project context
+   - T3: Archive statistics (count, date range, size)
 
-2. Format output clearly showing what's in each tier
+5. **Note any empty sections** or missing files
 
-3. Note any empty sections or missing files
+6. **Remind user** of available commands:
+   - `/save` - Update brain from session
+   - `/recall <query>` - Search archive
+   - `bun src/archive.js list` - List all archive entries
+   - `bun src/archive.js prune --keep 20` - Prune old entries
+   - Direct file edits for precision
 
-4. Remind user they can:
-   - Edit files directly
-   - Use `/save` to update from session
-   - Use `/recall <query>` to search archive
+## Project Identity
+
+Show the project ID being used:
+```bash
+bun src/project-id.js
+```
+
+If using directory name fallback, suggest:
+```bash
+bun src/project-id.js --init
+```
+to create a stable `.brain-id` file.
