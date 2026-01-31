@@ -38,7 +38,7 @@ claude plugins add cc-brain
 ### Option 4: Git Clone
 
 ```bash
-git clone https://github.com/tripzero/cc-brain.git
+git clone https://github.com/tripzcodes/cc-brain.git
 cd cc-brain
 node scripts/install.js
 ```

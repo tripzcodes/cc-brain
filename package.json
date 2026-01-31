@@ -33,11 +33,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tripzero/cc-brain.git"
+    "url": "git+https://github.com/tripzcodes/cc-brain.git"
   },
-  "homepage": "https://github.com/tripzero/cc-brain#readme",
+  "homepage": "https://github.com/tripzcodes/cc-brain#readme",
   "bugs": {
-    "url": "https://github.com/tripzero/cc-brain/issues"
+    "url": "https://github.com/tripzcodes/cc-brain/issues"
   },
   "engines": {
     "node": ">=18.0.0"

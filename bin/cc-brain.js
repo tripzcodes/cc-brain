@@ -55,7 +55,7 @@ Examples:
   cc-brain archive stats
   cc-brain project-id --init
 
-More info: https://github.com/tripzero/cc-brain`);
+More info: https://github.com/tripzcodes/cc-brain`);
 }
 
 if (!command || command === '--help' || command === '-h') {
