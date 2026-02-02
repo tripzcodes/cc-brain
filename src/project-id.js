@@ -17,6 +17,8 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
+import { homedir } from 'os';
+import { isMainModule } from './utils.js';
 
 const PROJECT_DIR = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 const BRAIN_ID_FILE = join(PROJECT_DIR, '.brain-id');
@@ -47,12 +49,12 @@ function initBrainId() {
 }
 
 function getProjectBrainPath() {
-  const brainDir = process.env.CC_BRAIN_DIR || join(process.env.HOME || process.env.USERPROFILE, '.claude', 'brain');
+  const brainDir = process.env.CC_BRAIN_DIR || join(homedir(), '.claude', 'brain');
   return join(brainDir, 'projects', getProjectId());
 }
 
 // CLI (only when run directly)
-if (import.meta.main) {
+if (isMainModule(import.meta.url)) {
   const args = process.argv.slice(2);
 
   if (args.includes('--init')) {
