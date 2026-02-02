@@ -55,9 +55,10 @@ npx cc-brain install
 bunx cc-brain install
 ```
 
-### Claude Plugin
+### GitHub Packages
 ```bash
-claude plugins add cc-brain
+npm install -g @tripzcodes/cc-brain --registry=https://npm.pkg.github.com
+cc-brain install
 ```
 
 ---
@@ -145,15 +146,17 @@ claude plugins add cc-brain
 
 ---
 
-## Commands
+## Skills
 
-Use these skills in Claude Code:
+Skills are installed to `~/.claude/skills/` and available in Claude Code:
 
-| Command | Description |
-|---------|-------------|
+| Skill | Description |
+|-------|-------------|
 | `/save` | Save session context to brain |
 | `/recall <query>` | Search archive for past context |
 | `/brain` | View current brain state |
+
+Skills are automatically discovered by Claude Code after installation.
 
 ---
 
@@ -161,9 +164,9 @@ Use these skills in Claude Code:
 
 ```bash
 # Setup
-cc-brain install              # Install hooks (merges with existing)
-cc-brain uninstall            # Remove hooks (preserves user hooks)
-cc-brain uninstall --purge    # Remove everything
+cc-brain install              # Install hooks + skills
+cc-brain uninstall            # Remove hooks + skills (preserves brain data)
+cc-brain uninstall --purge    # Remove everything including brain data
 
 # Search & Archive
 cc-brain recall "query"       # Search archive (scored results)
@@ -201,8 +204,8 @@ skills/
   recall.md           /recall skill
   brain.md            /brain skill
 scripts/
-  install.js          Install hooks (merges, preserves existing)
-  uninstall.js        Remove hooks (filters cc-brain only)
+  install.js          Install hooks + skills to ~/.claude/
+  uninstall.js        Remove hooks + skills (--purge for full removal)
 ```
 
 ---

@@ -99,8 +99,8 @@ brain/
   preferences.md      - Template: preferences
   projects/           - Template: per-project structure
 scripts/
-  install.js          - Install hooks to ~/.claude/ (merges, preserves existing)
-  uninstall.js        - Remove hooks (filters cc-brain only, --purge for full removal)
+  install.js          - Install hooks + skills to ~/.claude/
+  uninstall.js        - Remove hooks + skills (--purge for full removal)
 plugin.json           - Plugin manifest
 ```
 
@@ -108,11 +108,13 @@ plugin.json           - Plugin manifest
 
 ```bash
 npm install -g cc-brain    # Install globally
-cc-brain install           # Set up hooks
+cc-brain install           # Set up hooks + skills
 
-cc-brain uninstall         # Remove hooks (keeps brain data)
+cc-brain uninstall         # Remove hooks + skills (keeps brain data)
 cc-brain uninstall --purge # Remove everything
 ```
+
+Skills are installed to `~/.claude/skills/` where Claude Code auto-discovers them.
 
 ## CLI Tools
 
