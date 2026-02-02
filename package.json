@@ -4,7 +4,7 @@
   "description": "Persistent memory system for Claude Code - remembers context across sessions",
   "type": "module",
   "bin": {
-    "cc-brain": "./bin/cc-brain.js"
+    "cc-brain": "bin/cc-brain.js"
   },
   "files": [
     "bin",
