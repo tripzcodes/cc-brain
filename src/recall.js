@@ -14,15 +14,28 @@ import { existsSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { getProjectId } from './project-id.js';
+import { isMainModule } from './utils.js';
 
 const BRAIN_DIR = process.env.CC_BRAIN_DIR || join(homedir(), '.claude', 'brain');
 const PROJECT_ID = getProjectId();
 const ARCHIVE_DIR = join(BRAIN_DIR, 'projects', PROJECT_ID, 'archive');
 const CONTEXT_DIR = join(BRAIN_DIR, 'projects', PROJECT_ID);
 
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildRegex(query) {
+  try {
+    return new RegExp(query, 'i');
+  } catch {
+    return new RegExp(escapeRegex(query), 'i');
+  }
+}
+
 function searchArchive(query, options = {}) {
   const results = [];
-  const regex = new RegExp(query, 'gi');
+  const regex = buildRegex(query);
 
   // Search archive files
   if (existsSync(ARCHIVE_DIR)) {
@@ -62,12 +75,19 @@ function searchArchive(query, options = {}) {
         const dateMatch = file.match(/(\d{4}-\d{2}-\d{2})/);
         const date = dateMatch ? dateMatch[1] : 'unknown';
 
+        // Score: header matches (#) get bonus weight
+        let score = matches.length;
+        for (const m of matches) {
+          if (/^#{1,6}\s/.test(m.text)) score += 2;
+        }
+
         results.push({
           file,
           date,
           path,
           matches,
-          matchCount: matches.length
+          matchCount: matches.length,
+          score
         });
       }
     }
@@ -90,25 +110,43 @@ function searchArchive(query, options = {}) {
     }
 
     if (matches.length > 0) {
+      let score = matches.length;
+      for (const m of matches) {
+        if (/^#{1,6}\s/.test(m.text)) score += 2;
+      }
+
       results.unshift({
         file: 'context.md',
         date: 'current',
         path: contextPath,
         matches,
-        matchCount: matches.length
+        matchCount: matches.length,
+        score
       });
     }
   }
 
-  // Sort by match count (most relevant first), then by date
+  // Sort by score (most relevant first), then by date
   results.sort((a, b) => {
     if (a.date === 'current') return -1;
     if (b.date === 'current') return 1;
-    if (b.matchCount !== a.matchCount) return b.matchCount - a.matchCount;
+    if (b.score !== a.score) return b.score - a.score;
     return b.date.localeCompare(a.date);
   });
 
   return results;
+}
+
+const useColor = process.stdout.isTTY && !process.env.NO_COLOR;
+
+function highlight(text, query) {
+  if (!useColor) return text;
+  try {
+    const highlightRegex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+    return text.replace(highlightRegex, '\x1b[33m$1\x1b[0m');
+  } catch {
+    return text;
+  }
 }
 
 function formatResults(results, query) {
@@ -124,11 +162,7 @@ function formatResults(results, query) {
     console.log(`── ${result.file} (${result.date}) ──`);
 
     for (const match of result.matches) {
-      // Highlight the match
-      const highlighted = match.text.replace(
-        new RegExp(`(${query})`, 'gi'),
-        '\x1b[33m$1\x1b[0m'
-      );
+      const highlighted = highlight(match.text, query);
       console.log(`  L${match.line}: ${highlighted}`);
 
       if (match.context && match.context.length > 0) {
@@ -142,7 +176,7 @@ function formatResults(results, query) {
 }
 
 // CLI
-if (import.meta.main) {
+if (isMainModule(import.meta.url)) {
   const args = process.argv.slice(2);
 
   if (args.length === 0 || args.includes('--help') || args.includes('-h')) {
