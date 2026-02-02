@@ -69,6 +69,18 @@ if (existsSync(SETTINGS_PATH)) {
   console.log('No settings.json found');
 }
 
+// --- Remove Skills from ~/.claude/skills/ ---
+const SKILLS_DIR = join(CLAUDE_DIR, 'skills');
+const skillNames = ['save', 'recall', 'brain'];
+
+for (const name of skillNames) {
+  const skillDir = join(SKILLS_DIR, name);
+  if (existsSync(skillDir)) {
+    rmSync(skillDir, { recursive: true, force: true });
+    console.log(`Removed: ${skillDir}`);
+  }
+}
+
 // Optionally remove brain data
 if (purge) {
   if (existsSync(BRAIN_DIR)) {

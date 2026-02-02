@@ -93,6 +93,22 @@ settings.hooks.PreCompact = mergeHookArray(settings.hooks.PreCompact, hooks.PreC
 writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
 console.log(`\nUpdated: ${settingsPath}`);
 
+// --- Install Skills to ~/.claude/skills/ ---
+const SKILLS_DIR = join(CLAUDE_DIR, 'skills');
+const skillNames = ['save', 'recall', 'brain'];
+
+for (const name of skillNames) {
+  const skillDir = join(SKILLS_DIR, name);
+  mkdirSync(skillDir, { recursive: true });
+  copyFileSync(
+    join(PROJECT_ROOT, 'skills', `${name}.md`),
+    join(skillDir, 'SKILL.md')
+  );
+}
+
+console.log(`\nInstalled skills to: ${SKILLS_DIR}`);
+console.log('  /save, /recall, /brain');
+
 console.log(`
 cc-brain installed!
 
