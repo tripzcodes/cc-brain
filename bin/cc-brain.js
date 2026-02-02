@@ -15,13 +15,17 @@ const ROOT = join(__dirname, '..');
 const command = process.argv[2];
 const args = process.argv.slice(3);
 
-// Check for bun, fallback to node
+// Check for bun, fallback to node (fast path avoids spawning a process)
 let runtime = 'node';
-try {
-  execSync('bun --version', { stdio: 'ignore' });
+if (process.versions.bun || process.env.BUN_INSTALL) {
   runtime = 'bun';
-} catch {
-  // bun not available, use node
+} else {
+  try {
+    execSync('bun --version', { stdio: 'ignore', timeout: 2000 });
+    runtime = 'bun';
+  } catch {
+    // bun not available, use node
+  }
 }
 
 const commands = {
