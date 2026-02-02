@@ -19,21 +19,49 @@ const purge = process.argv.includes('--purge');
 
 console.log('Uninstalling cc-brain...\n');
 
-// Remove hooks from settings.json
+// Remove cc-brain hooks from settings.json (preserves user's other hooks)
+function isCcBrainHook(entry) {
+  if (!entry || !entry.hooks) return false;
+  return entry.hooks.some(h =>
+    (h.command && h.command.includes('loader.js')) ||
+    (h.prompt && h.prompt.includes('structured saver'))
+  );
+}
+
 if (existsSync(SETTINGS_PATH)) {
-  const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf-8'));
+  let settings;
+  try {
+    settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf-8'));
+  } catch (e) {
+    console.error(`Error: Could not parse ${SETTINGS_PATH}`);
+    console.error(`  ${e.message}`);
+    console.error('Fix the file manually or delete it, then re-run.');
+    process.exit(1);
+  }
 
   if (settings.hooks) {
-    delete settings.hooks.SessionStart;
-    delete settings.hooks.PreCompact;
+    let removed = false;
+
+    for (const event of ['SessionStart', 'PreCompact']) {
+      if (Array.isArray(settings.hooks[event])) {
+        const before = settings.hooks[event].length;
+        settings.hooks[event] = settings.hooks[event].filter(entry => !isCcBrainHook(entry));
+        if (settings.hooks[event].length < before) removed = true;
+        if (settings.hooks[event].length === 0) delete settings.hooks[event];
+      }
+    }
 
     // Clean up empty hooks object
     if (Object.keys(settings.hooks).length === 0) {
       delete settings.hooks;
     }
 
-    writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2));
-    console.log(`Removed hooks from: ${SETTINGS_PATH}`);
+    if (removed) {
+      writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2));
+      console.log(`Removed cc-brain hooks from: ${SETTINGS_PATH}`);
+    } else {
+      console.log('No cc-brain hooks found in settings.json');
+    }
   } else {
     console.log('No hooks found in settings.json');
   }
