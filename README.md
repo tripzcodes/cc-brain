@@ -45,19 +45,26 @@ npm install -g cc-brain
 cc-brain install
 ```
 
-### npx (no install)
+### npx (one-liner)
 ```bash
 npx cc-brain install
 ```
 
-### bunx
+### bun
 ```bash
-bunx cc-brain install
+bun install -g cc-brain
+cc-brain install
 ```
 
 ### GitHub Packages
 ```bash
 npm install -g @tripzcodes/cc-brain --registry=https://npm.pkg.github.com
+cc-brain install
+```
+
+### Upgrade
+```bash
+npm install -g cc-brain@latest
 cc-brain install
 ```
 
