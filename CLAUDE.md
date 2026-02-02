@@ -13,7 +13,7 @@ Persistent memory system for Claude Code. Remembers context across sessions.
 └── projects/{id}/
     ├── context.md             T2: Current project (120 lines max)
     └── archive/               T3: On-demand (unlimited)
-        └── {date}.md
+        └── {date}-{time}.md
 ```
 
 | Tier | What | Size | When Loaded |
@@ -30,16 +30,64 @@ Persistent memory system for Claude Code. Remembers context across sessions.
 | `/recall <query>` | Search T3 archive for past context |
 | `/brain` | View current brain state and stats |
 
+## Architecture
+
+```
+┌──────────────────────────────────────────────────────┐
+│                    Claude Code                        │
+│                                                      │
+│  SessionStart hook ──► loader.js ──► XML output      │
+│                         │                            │
+│                         ├── T1: <user-profile>       │
+│                         ├── T1: <preferences>        │
+│                         ├── T2: <project id="...">   │
+│                         └── T3: <archive hint />     │
+│                                                      │
+│  PreCompact hook ──► saver.js ──► atomic writes      │
+│                         │                            │
+│                         ├── validates input shape     │
+│                         ├── enforces line limits      │
+│                         ├── warns at 80% capacity     │
+│                         └── safeWriteFileSync()       │
+│                                                      │
+│  /recall skill ──► recall.js ──► scored results      │
+│                         │                            │
+│                         ├── regex with safe fallback  │
+│                         ├── header match scoring      │
+│                         └── TTY-aware color output    │
+└──────────────────────────────────────────────────────┘
+                          │
+                          ▼
+            ~/.claude/brain/ (persistent)
+```
+
+### Data Flow
+
+1. **SessionStart** - `loader.js` loads T1 + T2 into XML-tagged context, auto-prunes archives >90 days
+2. **PreCompact** - Agent analyzes session, calls `saver.js` with structured JSON
+3. **Manual** - `/save` skill triggers saver, `/recall` searches archive
+4. **Archive** - Each save creates `YYYY-MM-DD-HHMMSS.md` (one file per session, no collisions)
+
+### Key Design Decisions
+
+- **Atomic writes**: All file writes go through `safeWriteFileSync()` (write to temp, then rename) to prevent corruption
+- **Cross-runtime**: `isMainModule()` helper works in both Node and Bun (replaces `import.meta.main`)
+- **Hook preservation**: Install/uninstall detect cc-brain hooks by content matching, never clobber user's other hooks
+- **XML output**: Loader wraps content in `<user-profile>`, `<preferences>`, `<project>` tags for reliable Claude parsing
+
 ## Project Structure
 
 ```
 src/
-  loader.js           - Loads T1+T2 into context, auto-prunes archive
-  saver.js            - Structured saver with validation and dry-run
-  recall.js           - Grep-based archive search
+  utils.js            - Shared utilities (safeWriteFileSync, isMainModule)
+  loader.js           - Loads T1+T2 into XML context, auto-prunes archive
+  saver.js            - Structured saver with validation, limits, atomic writes
+  recall.js           - Scored archive search with safe regex and color detection
   archive.js          - Archive management (list, prune, stats)
   project-id.js       - Stable project identity (.brain-id)
   saver-prompt.md     - Instructions for saving
+bin/
+  cc-brain.js         - CLI entry point with fast runtime detection
 hooks/
   hooks.json          - Hook configuration (SessionStart, PreCompact)
 skills/
@@ -51,59 +99,60 @@ brain/
   preferences.md      - Template: preferences
   projects/           - Template: per-project structure
 scripts/
-  install.js          - Install hooks to ~/.claude/
-  uninstall.js        - Remove hooks (--purge for full removal)
+  install.js          - Install hooks to ~/.claude/ (merges, preserves existing)
+  uninstall.js        - Remove hooks (filters cc-brain only, --purge for full removal)
 plugin.json           - Plugin manifest
 ```
-
-## How It Works
-
-1. **SessionStart** → loader.js injects T1 + T2, auto-prunes old archives
-2. **PreCompact** → agent saves using structured saver.js
-3. **Manual** → `/save` to capture context anytime
-4. **Search** → `/recall` greps archive with real search
-5. Brain persists in ~/.claude/brain/, survives sessions
 
 ## Install
 
 ```bash
-bun scripts/install.js    # Install hooks
-bun scripts/uninstall.js  # Remove hooks (keeps brain data)
-bun scripts/uninstall.js --purge  # Remove everything
+npm install -g cc-brain    # Install globally
+cc-brain install           # Set up hooks
+
+cc-brain uninstall         # Remove hooks (keeps brain data)
+cc-brain uninstall --purge # Remove everything
 ```
 
 ## CLI Tools
 
 ```bash
 # Loader
-bun src/loader.js              # Output brain context
+cc-brain load                  # Output brain context (XML-tagged)
 
 # Project Identity
-bun src/project-id.js          # Show current project ID
-bun src/project-id.js --init   # Create .brain-id file
-bun src/project-id.js --path   # Show project brain path
+cc-brain project-id            # Show current project ID
+cc-brain project-id --init     # Create .brain-id file
+cc-brain project-id --path     # Show project brain path
 
 # Saver
-bun src/saver.js --help                        # Show usage
-bun src/saver.js --dry-run --json '{...}'      # Preview changes
-bun src/saver.js --json '{...}'                # Apply changes
+cc-brain save --help                        # Show usage
+cc-brain save --dry-run --json '{...}'      # Preview changes
+cc-brain save --json '{...}'                # Apply changes
 
 # Recall (Search)
-bun src/recall.js "query"           # Search archive
-bun src/recall.js "regex.*pattern"  # Regex search
-bun src/recall.js "term" --context  # Show surrounding lines
+cc-brain recall "query"           # Search archive (scored results)
+cc-brain recall "regex.*pattern"  # Regex search (safe fallback on invalid)
+cc-brain recall "term" --context  # Show surrounding lines
+cc-brain recall "term" --json     # JSON output
 
 # Archive Management
-bun src/archive.js list                    # List entries
-bun src/archive.js stats                   # Show statistics
-bun src/archive.js prune --keep 20         # Keep last 20
-bun src/archive.js prune --older-than 90d  # Delete old entries
+cc-brain archive list                    # List entries
+cc-brain archive stats                   # Statistics (avg size, time span)
+cc-brain archive prune --keep 20         # Keep last 20
+cc-brain archive prune --older-than 90d  # Delete old entries
 ```
 
 ## Features
 
 - **Stable project identity**: Uses `.brain-id` file, survives directory renames
-- **Structured saving**: JSON-based with validation and dry-run preview
-- **Real search**: Grep-based archive search with regex support
+- **Structured saving**: JSON-based with input validation and dry-run preview
+- **Input validation**: Shape checking, key allowlist, type enforcement per tier
+- **Capacity warnings**: Warns at 80% of line limits before rejecting
+- **Atomic file writes**: Temp file + rename prevents corruption on crash
+- **Real search**: Regex with safe fallback, header-weighted scoring
+- **Smart color output**: Detects TTY and NO_COLOR before emitting ANSI codes
 - **Auto-prune**: Removes archive entries older than 90 days on session start
 - **Size limits**: Enforces line limits per tier to prevent bloat
+- **Hook-safe install**: Merges hooks without clobbering user's existing config
+- **Cross-runtime**: Works in both Node (>=18) and Bun
