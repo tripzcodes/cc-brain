@@ -16,6 +16,7 @@ import { existsSync, readdirSync, statSync, unlinkSync, readFileSync } from 'fs'
 import { join } from 'path';
 import { homedir } from 'os';
 import { getProjectId } from './project-id.js';
+import { isMainModule } from './utils.js';
 
 const BRAIN_DIR = process.env.CC_BRAIN_DIR || join(homedir(), '.claude', 'brain');
 const PROJECT_ID = getProjectId();
@@ -70,11 +71,17 @@ function showStats() {
   const oldest = entries[entries.length - 1];
   const newest = entries[0];
 
+  const avgSize = totalSize / entries.length;
+  const spanMs = newest.date - oldest.date;
+  const spanDays = Math.round(spanMs / (1000 * 60 * 60 * 24));
+
   console.log(`Archive Statistics`);
   console.log(`──────────────────`);
   console.log(`Location:  ${ARCHIVE_DIR}`);
   console.log(`Entries:   ${entries.length}`);
   console.log(`Total:     ${(totalSize / 1024).toFixed(1)}kb`);
+  console.log(`Average:   ${(avgSize / 1024).toFixed(1)}kb per entry`);
+  console.log(`Span:      ${spanDays} days`);
   console.log(`Oldest:    ${oldest.date.toISOString().split('T')[0]} (${oldest.name})`);
   console.log(`Newest:    ${newest.date.toISOString().split('T')[0]} (${newest.name})`);
 }
@@ -144,41 +151,42 @@ function autoPrune(days = 90, silent = false) {
 }
 
 // CLI
-const args = process.argv.slice(2);
-const command = args[0];
+if (isMainModule(import.meta.url)) {
+  const args = process.argv.slice(2);
+  const command = args[0];
 
-if (command === 'list') {
-  listArchive();
-} else if (command === 'stats') {
-  showStats();
-} else if (command === 'prune') {
-  const keepIdx = args.indexOf('--keep');
-  const olderIdx = args.indexOf('--older-than');
+  if (command === 'list') {
+    listArchive();
+  } else if (command === 'stats') {
+    showStats();
+  } else if (command === 'prune') {
+    const keepIdx = args.indexOf('--keep');
+    const olderIdx = args.indexOf('--older-than');
 
-  if (keepIdx !== -1) {
-    const keep = parseInt(args[keepIdx + 1], 10);
-    if (isNaN(keep)) {
-      console.error('Error: --keep requires a number');
+    if (keepIdx !== -1) {
+      const keep = parseInt(args[keepIdx + 1], 10);
+      if (isNaN(keep) || keep <= 0) {
+        console.error('Error: --keep requires a positive number');
+        process.exit(1);
+      }
+      pruneByCount(keep);
+    } else if (olderIdx !== -1) {
+      const ageStr = args[olderIdx + 1] || '';
+      if (!/^\d+d?$/.test(ageStr)) {
+        console.error('Error: --older-than requires format like "90" or "90d"');
+        process.exit(1);
+      }
+      const days = parseInt(ageStr, 10);
+      pruneByAge(days);
+    } else {
+      console.error('Error: prune requires --keep <n> or --older-than <days>');
       process.exit(1);
     }
-    pruneByCount(keep);
-  } else if (olderIdx !== -1) {
-    const ageStr = args[olderIdx + 1];
-    const days = parseInt(ageStr, 10);
-    if (isNaN(days)) {
-      console.error('Error: --older-than requires a number (e.g., 90d)');
-      process.exit(1);
-    }
-    pruneByAge(days);
-  } else {
-    console.error('Error: prune requires --keep <n> or --older-than <days>');
-    process.exit(1);
-  }
-} else if (command === 'auto-prune') {
-  const days = parseInt(args[1], 10) || 90;
-  autoPrune(days);
-} else if (command === '--help' || command === '-h' || !command) {
-  console.log(`Usage: bun src/archive.js <command> [options]
+  } else if (command === 'auto-prune') {
+    const days = parseInt(args[1], 10) || 90;
+    autoPrune(days);
+  } else if (command === '--help' || command === '-h' || !command) {
+    console.log(`Usage: bun src/archive.js <command> [options]
 
 Commands:
   list                      List all archive entries
@@ -191,9 +199,10 @@ Examples:
   bun src/archive.js list
   bun src/archive.js prune --keep 20
   bun src/archive.js prune --older-than 90d`);
-} else {
-  console.error(`Unknown command: ${command}`);
-  process.exit(1);
+  } else {
+    console.error(`Unknown command: ${command}`);
+    process.exit(1);
+  }
 }
 
 // Export for use as module
