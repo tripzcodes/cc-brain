@@ -6,13 +6,15 @@
  */
 
 import { existsSync, mkdirSync, copyFileSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { homedir } from 'os';
+import { fileURLToPath } from 'url';
 
 const HOME = homedir();
 const CLAUDE_DIR = join(HOME, '.claude');
 const BRAIN_DIR = join(CLAUDE_DIR, 'brain');
-const PROJECT_ROOT = join(import.meta.dirname, '..');
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = join(__dirname, '..');
 
 console.log('Installing cc-brain...\n');
 
@@ -68,10 +70,25 @@ const hooks = JSON.parse(readFileSync(join(PROJECT_ROOT, 'hooks', 'hooks.json'),
 const loaderPath = join(PROJECT_ROOT, 'src', 'loader.js').replace(/\\/g, '/');
 hooks.SessionStart[0].hooks[0].command = `bun "${loaderPath}"`;
 
-// Merge hooks (preserve existing hooks, add ours)
+// Merge hooks — preserve user's other hooks, replace/append ours
+function isCcBrainHook(entry) {
+  if (!entry || !entry.hooks) return false;
+  return entry.hooks.some(h =>
+    (h.command && h.command.includes('loader.js')) ||
+    (h.prompt && h.prompt.includes('structured saver'))
+  );
+}
+
+function mergeHookArray(existing, ours) {
+  if (!existing) return ours;
+  // Filter out old cc-brain hooks, then append ours
+  const filtered = existing.filter(entry => !isCcBrainHook(entry));
+  return [...filtered, ...ours];
+}
+
 settings.hooks = settings.hooks || {};
-settings.hooks.SessionStart = hooks.SessionStart;
-settings.hooks.PreCompact = hooks.PreCompact;
+settings.hooks.SessionStart = mergeHookArray(settings.hooks.SessionStart, hooks.SessionStart);
+settings.hooks.PreCompact = mergeHookArray(settings.hooks.PreCompact, hooks.PreCompact);
 
 writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
 console.log(`\nUpdated: ${settingsPath}`);
