@@ -18,10 +18,11 @@
  * }
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { existsSync, readFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { getProjectId } from './project-id.js';
+import { safeWriteFileSync, isMainModule } from './utils.js';
 
 const BRAIN_DIR = process.env.CC_BRAIN_DIR || join(homedir(), '.claude', 'brain');
 const PROJECT_ID = getProjectId();
@@ -71,9 +72,11 @@ function formatSection(title, data) {
   return lines.join('\n');
 }
 
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function mergeContent(existing, updates, template) {
-  // For now, replace sections that are updated
-  // Future: smarter merging
   if (!existing) {
     existing = template || '';
   }
@@ -81,15 +84,17 @@ function mergeContent(existing, updates, template) {
   let result = existing;
 
   for (const [section, content] of Object.entries(updates)) {
-    const sectionHeader = `## ${section}`;
     const newContent = formatSection(section, content);
 
     if (!newContent) continue;
 
-    // Find and replace section, or append
-    const sectionRegex = new RegExp(`## ${section}[\\s\\S]*?(?=\\n## |$)`, 'g');
-    if (sectionRegex.test(result)) {
-      result = result.replace(sectionRegex, newContent + '\n\n');
+    // Anchor to line start with m flag, escape section name for regex safety
+    const sectionRegex = new RegExp(
+      `^## ${escapeRegex(section)}[\\s\\S]*?(?=\\n## |$)`, 'm'
+    );
+    const replaced = result.replace(sectionRegex, newContent + '\n\n');
+    if (replaced !== result) {
+      result = replaced;
     } else {
       result = result.trim() + '\n\n' + newContent + '\n';
     }
@@ -163,9 +168,42 @@ ${summary}
 `;
 }
 
+const VALID_KEYS = new Set(['t1_user', 't1_prefs', 't2', 't3']);
+
+function validateInputShape(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return ['Input must be a JSON object'];
+  }
+  const errors = [];
+  for (const key of Object.keys(input)) {
+    if (!VALID_KEYS.has(key)) {
+      errors.push(`Unknown key: "${key}" (valid: ${[...VALID_KEYS].join(', ')})`);
+    }
+  }
+  if (input.t1_user !== undefined && (typeof input.t1_user !== 'object' || Array.isArray(input.t1_user))) {
+    errors.push('t1_user must be an object');
+  }
+  if (input.t1_prefs !== undefined && (typeof input.t1_prefs !== 'object' || Array.isArray(input.t1_prefs))) {
+    errors.push('t1_prefs must be an object');
+  }
+  if (input.t2 !== undefined && (typeof input.t2 !== 'object' || Array.isArray(input.t2))) {
+    errors.push('t2 must be an object');
+  }
+  if (input.t3 !== undefined && typeof input.t3 !== 'string') {
+    errors.push('t3 must be a string');
+  }
+  return errors;
+}
+
 function validateAndPrepare(input, dryRun = false) {
   const changes = [];
   const errors = [];
+
+  // Validate input shape
+  const shapeErrors = validateInputShape(input);
+  if (shapeErrors.length > 0) {
+    return { changes: [], errors: shapeErrors };
+  }
 
   // T1 User
   if (input.t1_user) {
@@ -176,6 +214,9 @@ function validateAndPrepare(input, dryRun = false) {
     if (lines > LIMITS.t1_user) {
       errors.push(`t1_user exceeds limit: ${lines}/${LIMITS.t1_user} lines`);
     } else {
+      if (lines > LIMITS.t1_user * 0.8) {
+        console.warn(`Warning: t1_user at ${lines}/${LIMITS.t1_user} lines (${Math.round(lines / LIMITS.t1_user * 100)}%)`);
+      }
       changes.push({
         tier: 't1_user',
         path: PATHS.t1_user,
@@ -195,6 +236,9 @@ function validateAndPrepare(input, dryRun = false) {
     if (lines > LIMITS.t1_prefs) {
       errors.push(`t1_prefs exceeds limit: ${lines}/${LIMITS.t1_prefs} lines`);
     } else {
+      if (lines > LIMITS.t1_prefs * 0.8) {
+        console.warn(`Warning: t1_prefs at ${lines}/${LIMITS.t1_prefs} lines (${Math.round(lines / LIMITS.t1_prefs * 100)}%)`);
+      }
       changes.push({
         tier: 't1_prefs',
         path: PATHS.t1_prefs,
@@ -214,6 +258,9 @@ function validateAndPrepare(input, dryRun = false) {
     if (lines > LIMITS.t2) {
       errors.push(`t2 exceeds limit: ${lines}/${LIMITS.t2} lines`);
     } else {
+      if (lines > LIMITS.t2 * 0.8) {
+        console.warn(`Warning: t2 at ${lines}/${LIMITS.t2} lines (${Math.round(lines / LIMITS.t2 * 100)}%)`);
+      }
       changes.push({
         tier: 't2',
         path: PATHS.t2,
@@ -224,22 +271,21 @@ function validateAndPrepare(input, dryRun = false) {
     }
   }
 
-  // T3 Archive
+  // T3 Archive (each session gets its own file)
   if (input.t3) {
-    const date = new Date().toISOString().split('T')[0];
-    const archivePath = join(PATHS.t3_dir, `${date}.md`);
-    const existing = readFile(archivePath);
-    const updated = existing
-      ? existing + '\n---\n\n' + generateT3Content(input.t3)
-      : generateT3Content(input.t3);
+    const now = new Date();
+    const date = now.toISOString().split('T')[0];
+    const time = now.toTimeString().split(' ')[0].replace(/:/g, '');
+    const archivePath = join(PATHS.t3_dir, `${date}-${time}.md`);
+    const updated = generateT3Content(input.t3);
 
     changes.push({
       tier: 't3',
       path: archivePath,
-      before: existing,
+      before: null,
       after: updated,
       lines: countLines(updated),
-      isNew: !existing
+      isNew: true
     });
   }
 
@@ -255,18 +301,18 @@ function showDiff(change) {
   } else if (!change.before) {
     console.log(`│ Status: CREATE`);
   } else {
-    console.log(`│ Status: UPDATE`);
+    const beforeLines = countLines(change.before);
+    console.log(`│ Status: UPDATE (${beforeLines} → ${change.lines} lines)`);
   }
 
   console.log('├──────────────────────────────');
 
-  // Show content preview (first 10 lines)
-  const preview = change.after.split('\n').slice(0, 10);
+  const preview = change.after.split('\n').slice(0, 15);
   for (const line of preview) {
     console.log(`│ ${line}`);
   }
-  if (change.lines > 10) {
-    console.log(`│ ... (${change.lines - 10} more lines)`);
+  if (change.lines > 15) {
+    console.log(`│ ... (${change.lines - 15} more lines)`);
   }
 
   console.log('└──────────────────────────────');
@@ -280,13 +326,13 @@ function applyChanges(changes) {
       mkdirSync(dir, { recursive: true });
     }
 
-    writeFileSync(change.path, change.after);
+    safeWriteFileSync(change.path, change.after);
     console.log(`Saved: ${change.tier} → ${change.path}`);
   }
 }
 
 // CLI
-if (import.meta.main) {
+if (isMainModule(import.meta.url)) {
   const args = process.argv.slice(2);
 
   if (args.includes('--help') || args.includes('-h')) {
