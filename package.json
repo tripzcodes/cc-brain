@@ -1,6 +1,6 @@
 {
   "name": "cc-brain",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Persistent memory system for Claude Code - remembers context across sessions",
   "type": "module",
   "bin": {
@@ -18,7 +18,7 @@
   "scripts": {
     "postinstall": "node scripts/install.js",
     "preuninstall": "node scripts/uninstall.js",
-    "test": "node src/loader.js"
+    "test": "bun test"
   },
   "keywords": [
     "claude",

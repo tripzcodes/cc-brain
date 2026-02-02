@@ -96,12 +96,14 @@ function loadBrain() {
   const pruned = autoPruneArchive();
 
   const parts = [];
+  let hasContent = false;
 
   parts.push('<brain>');
 
   // Show pruned files warning
   if (pruned.length > 0) {
     parts.push(`[Auto-pruned ${pruned.length} archive entries older than ${AUTO_PRUNE_DAYS} days: ${pruned.join(', ')}]\n`);
+    hasContent = true;
   }
 
   // ═══════════════════════════════════════════
@@ -113,6 +115,7 @@ function loadBrain() {
     parts.push('<user-profile>');
     parts.push(user);
     parts.push('</user-profile>');
+    hasContent = true;
   }
 
   const prefs = readIfExists(join(BRAIN_DIR, 'preferences.md'), LIMITS.preferences);
@@ -120,6 +123,7 @@ function loadBrain() {
     parts.push('<preferences>');
     parts.push(prefs);
     parts.push('</preferences>');
+    hasContent = true;
   }
 
   // ═══════════════════════════════════════════
@@ -135,6 +139,7 @@ function loadBrain() {
       parts.push(`<project id="${PROJECT_ID}">`);
       parts.push(context);
       parts.push('</project>');
+      hasContent = true;
     }
   }
 
@@ -154,14 +159,14 @@ function loadBrain() {
 
   parts.push('</brain>');
 
-  return parts.join('\n');
+  return { output: parts.join('\n'), hasContent };
 }
 
-const brain = loadBrain();
+const { output, hasContent } = loadBrain();
 
 // Only output if there's actual content
-if (brain.replace(/<\/?brain>/g, '').replace(/<[^>]+\/>/g, '').replace(/<[^>]+>[^<]*<\/[^>]+>/g, '').replace(/\[.*?\]/g, '').replace(/<!--.*?-->/g, '').trim()) {
-  console.log(brain);
+if (hasContent) {
+  console.log(output);
   console.log('\n---');
   console.log('Above is your persistent memory. Use /save to update, /recall to search archive.');
 }

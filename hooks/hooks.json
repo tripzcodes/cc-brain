@@ -17,7 +17,7 @@
       "hooks": [
         {
           "type": "agent",
-          "prompt": "Context is being compacted. Save important information using the structured saver.\n\nANALYZE this session for:\n- New user insights (T1 - rare)\n- New preferences (T1 - rare)\n- Project decisions + rationale (T2)\n- Current focus/state (T2)\n- Session summary (T3 - if significant)\n\nBUILD JSON payload:\n```json\n{\n  \"t2\": {\n    \"what\": \"Project description\",\n    \"focus\": [\"current tasks\"],\n    \"decisions\": {\"decision\": \"rationale\"}\n  },\n  \"t3\": \"Session summary if significant work done.\"\n}\n```\n\nSAVE using:\n```bash\nbun src/saver.js --json '<payload>'\n```\n\nRules:\n- Only include tiers with new info\n- T2 updates are common, T1 updates are rare\n- Decisions need rationale\n- Keep it concise",
+          "prompt": "Context is being compacted. Save important information using the structured saver.\n\nANALYZE this session for:\n- New user insights (T1 - rare)\n- New preferences (T1 - rare)\n- Project decisions + rationale (T2)\n- Current focus/state (T2)\n- Session summary (T3 - if significant)\n\nBUILD JSON payload:\n```json\n{\n  \"t2\": {\n    \"what\": \"Project description\",\n    \"focus\": [\"current tasks\"],\n    \"decisions\": {\"decision\": \"rationale\"}\n  },\n  \"t3\": \"Session summary if significant work done.\"\n}\n```\n\nSAVE using:\n```bash\nnpx cc-brain save --json '<payload>'\n```\n\nRules:\n- Only include tiers with new info\n- T2 updates are common, T1 updates are rare\n- Decisions need rationale\n- Keep it concise",
           "timeout": 120,
           "statusMessage": "Saving to brain..."
         }
