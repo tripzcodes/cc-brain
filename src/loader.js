@@ -49,6 +49,8 @@ function readIfExists(path, limit = null) {
 }
 
 function ensureProjectDir() {
+  if (!PROJECT_ID) return;
+
   const archiveDir = join(PROJECT_PATH, 'archive');
 
   if (!existsSync(PROJECT_PATH)) {
@@ -81,7 +83,7 @@ function autoPruneArchive() {
       }
     }
   } catch (e) {
-    // Ignore errors during auto-prune
+    console.error(`[cc-brain] Auto-prune warning: ${e.message}`);
   }
 
   return deleted;
@@ -108,34 +110,45 @@ function loadBrain() {
 
   const user = readIfExists(join(BRAIN_DIR, 'user.md'), LIMITS.user);
   if (user && user.trim()) {
+    parts.push('<user-profile>');
     parts.push(user);
+    parts.push('</user-profile>');
   }
 
   const prefs = readIfExists(join(BRAIN_DIR, 'preferences.md'), LIMITS.preferences);
   if (prefs && prefs.trim()) {
+    parts.push('<preferences>');
     parts.push(prefs);
+    parts.push('</preferences>');
   }
 
   // ═══════════════════════════════════════════
   // TIER 2: Project context (current project)
   // ═══════════════════════════════════════════
 
-  const projectContext = join(PROJECT_PATH, 'context.md');
-  const context = readIfExists(projectContext, LIMITS.context);
-  if (context && context.trim()) {
-    parts.push(`## Project: ${PROJECT_ID}\n`);
-    parts.push(context);
+  if (!PROJECT_ID) {
+    parts.push('<!-- T2 skipped: no project ID -->');
+  } else {
+    const projectContext = join(PROJECT_PATH, 'context.md');
+    const context = readIfExists(projectContext, LIMITS.context);
+    if (context && context.trim()) {
+      parts.push(`<project id="${PROJECT_ID}">`);
+      parts.push(context);
+      parts.push('</project>');
+    }
   }
 
   // ═══════════════════════════════════════════
   // TIER 3: Archive (NOT loaded, just noted)
   // ═══════════════════════════════════════════
 
-  const archiveDir = join(PROJECT_PATH, 'archive');
-  if (existsSync(archiveDir)) {
-    const archiveFiles = readdirSync(archiveDir).filter(f => f.endsWith('.md'));
-    if (archiveFiles.length > 0) {
-      parts.push(`\n[Archive: ${archiveFiles.length} entries. Use /recall to search.]`);
+  if (PROJECT_ID) {
+    const archiveDir = join(PROJECT_PATH, 'archive');
+    if (existsSync(archiveDir)) {
+      const archiveFiles = readdirSync(archiveDir).filter(f => f.endsWith('.md'));
+      if (archiveFiles.length > 0) {
+        parts.push(`<archive entries="${archiveFiles.length}" hint="Use /recall to search" />`);
+      }
     }
   }
 
@@ -147,7 +160,7 @@ function loadBrain() {
 const brain = loadBrain();
 
 // Only output if there's actual content
-if (brain.replace(/<\/?brain>/g, '').replace(/\[.*?\]/g, '').trim()) {
+if (brain.replace(/<\/?brain>/g, '').replace(/<[^>]+\/>/g, '').replace(/<[^>]+>[^<]*<\/[^>]+>/g, '').replace(/\[.*?\]/g, '').replace(/<!--.*?-->/g, '').trim()) {
   console.log(brain);
   console.log('\n---');
   console.log('Above is your persistent memory. Use /save to update, /recall to search archive.');
