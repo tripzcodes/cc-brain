@@ -66,9 +66,8 @@ if (existsSync(settingsPath)) {
 // Read our hooks config
 const hooks = JSON.parse(readFileSync(join(PROJECT_ROOT, 'hooks', 'hooks.json'), 'utf-8'));
 
-// Update loader path to absolute (forward slashes for cross-platform)
-const loaderPath = join(PROJECT_ROOT, 'src', 'loader.js').replace(/\\/g, '/');
-hooks.SessionStart[0].hooks[0].command = `bun "${loaderPath}"`;
+// Use npx to resolve package at runtime (works regardless of install location)
+hooks.SessionStart[0].hooks[0].command = 'npx cc-brain load';
 
 // Merge hooks — preserve user's other hooks, replace/append ours
 function isCcBrainHook(entry) {
