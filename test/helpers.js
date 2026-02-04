@@ -5,9 +5,30 @@
 
 import { mkdirSync, rmSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { tmpdir } from 'os';
+import { tmpdir, homedir } from 'os';
 import { randomUUID } from 'crypto';
 import { spawnSync } from 'child_process';
+
+/**
+ * Find bun binary - check common locations
+ */
+function findBun() {
+  const candidates = [
+    'bun', // In PATH
+    join(homedir(), '.bun', 'bin', 'bun'), // Default install location
+  ];
+
+  for (const candidate of candidates) {
+    const result = spawnSync(candidate, ['--version'], { encoding: 'utf-8' });
+    if (result.status === 0) {
+      return candidate;
+    }
+  }
+
+  throw new Error('bun not found. Install with: curl -fsSL https://bun.sh/install | bash');
+}
+
+const BUN = findBun();
 
 /**
  * Create an isolated temp directory for testing
@@ -89,7 +110,7 @@ export function createBrainStructure(baseDir, projectId = 'test-project') {
  * This ensures module-level constants use the right values
  */
 export function runScript(scriptPath, args = [], env = {}) {
-  const result = spawnSync('bun', [scriptPath, ...args], {
+  const result = spawnSync(BUN, [scriptPath, ...args], {
     env: { ...process.env, ...env },
     encoding: 'utf-8',
     cwd: process.cwd()
@@ -106,7 +127,7 @@ export function runScript(scriptPath, args = [], env = {}) {
  * Run a Node/Bun expression and get the result
  */
 export function evalWithEnv(code, env = {}) {
-  const result = spawnSync('bun', ['-e', code], {
+  const result = spawnSync(BUN, ['-e', code], {
     env: { ...process.env, ...env },
     encoding: 'utf-8',
     cwd: process.cwd()
