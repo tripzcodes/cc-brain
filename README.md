@@ -17,7 +17,7 @@
   <a href="#installation">Installation</a> -
   <a href="#how-it-works">How It Works</a> -
   <a href="#architecture">Architecture</a> -
-  <a href="#commands">Commands</a> -
+  <a href="#skills">Skills</a> -
   <a href="#cli">CLI</a>
 </p>
 
@@ -201,6 +201,7 @@ src/
   recall.js           Scored archive search with safe regex and color detection
   archive.js          Archive management (list, prune, stats)
   project-id.js       Stable project identity (.brain-id)
+  saver-prompt.md     Instructions for saving
 bin/
   cc-brain.js         CLI entry point with fast runtime detection
 hooks/
@@ -212,6 +213,7 @@ skills/
 scripts/
   install.js          Install hooks + skills to ~/.claude/
   uninstall.js        Remove hooks + skills (--purge for full removal)
+plugin.json             Plugin manifest
 ```
 
 ---
