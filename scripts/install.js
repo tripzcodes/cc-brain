@@ -5,7 +5,7 @@
  * Sets up brain directory and hooks
  */
 
-import { existsSync, mkdirSync, copyFileSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, copyFileSync, readFileSync, writeFileSync, unlinkSync, realpathSync } from 'fs';
 import { join, dirname } from 'path';
 import { homedir } from 'os';
 import { fileURLToPath } from 'url';
@@ -66,14 +66,22 @@ if (existsSync(settingsPath)) {
 // Read our hooks config
 const hooks = JSON.parse(readFileSync(join(PROJECT_ROOT, 'hooks', 'hooks.json'), 'utf-8'));
 
-// Use npx to resolve package at runtime (works regardless of install location)
-hooks.SessionStart[0].hooks[0].command = 'npx cc-brain load';
+// Resolve absolute paths — avoids PATH issues on macOS with nvm/fnm/volta
+// Hook subprocesses don't source shell profiles, so npx/node may not be on PATH
+let nodePath;
+try {
+  nodePath = realpathSync(process.execPath);
+} catch {
+  nodePath = process.execPath;
+}
+const loaderScript = join(PROJECT_ROOT, 'src', 'loader.js');
+hooks.SessionStart[0].hooks[0].command = `"${nodePath}" "${loaderScript}"`;
 
 // Merge hooks — preserve user's other hooks, replace/append ours
 function isCcBrainHook(entry) {
   if (!entry || !entry.hooks) return false;
   return entry.hooks.some(h =>
-    (h.command && h.command.includes('loader.js')) ||
+    (h.command && (h.command.includes('cc-brain') || h.command.includes('loader.js'))) ||
     (h.prompt && h.prompt.includes('structured saver'))
   );
 }
