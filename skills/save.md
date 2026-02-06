@@ -46,12 +46,12 @@ Save important information from this session to persistent memory.
 
 3. **Preview changes** with dry-run:
 ```bash
-bun src/saver.js --dry-run --json '<payload>'
+npx cc-brain save --dry-run --json '<payload>'
 ```
 
 4. **Apply changes** if preview looks good:
 ```bash
-bun src/saver.js --json '<payload>'
+npx cc-brain save --json '<payload>'
 ```
 
 5. **Report** what was saved.
