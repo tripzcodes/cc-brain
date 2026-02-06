@@ -1,6 +1,6 @@
 {
   "name": "cc-brain",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Persistent memory system for Claude Code - remembers context across sessions",
   "type": "module",
   "bin": {
