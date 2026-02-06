@@ -18,13 +18,13 @@ cat ~/.claude/brain/preferences.md
 
 2. **Show Tier 2** (current project):
 ```bash
-bun src/project-id.js --path
+npx cc-brain project-id --path
 # Then read context.md from that path
 ```
 
 3. **Show Tier 3 stats**:
 ```bash
-bun src/archive.js stats
+npx cc-brain archive stats
 ```
 
 4. **Format output** showing:
@@ -37,19 +37,19 @@ bun src/archive.js stats
 6. **Remind user** of available commands:
    - `/save` - Update brain from session
    - `/recall <query>` - Search archive
-   - `bun src/archive.js list` - List all archive entries
-   - `bun src/archive.js prune --keep 20` - Prune old entries
+   - `npx cc-brain archive list` - List all archive entries
+   - `npx cc-brain archive prune --keep 20` - Prune old entries
    - Direct file edits for precision
 
 ## Project Identity
 
 Show the project ID being used:
 ```bash
-bun src/project-id.js
+npx cc-brain project-id
 ```
 
 If using directory name fallback, suggest:
 ```bash
-bun src/project-id.js --init
+npx cc-brain project-id --init
 ```
 to create a stable `.brain-id` file.
