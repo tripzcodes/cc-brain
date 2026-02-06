@@ -24,7 +24,8 @@ function isCcBrainHook(entry) {
   if (!entry || !entry.hooks) return false;
   return entry.hooks.some(h =>
     (h.command && (h.command.includes('cc-brain') || h.command.includes('loader.js'))) ||
-    (h.prompt && h.prompt.includes('structured saver'))
+    (h.prompt && h.prompt.includes('structured saver')) ||
+    (h.statusMessage && h.statusMessage.includes('brain'))
   );
 }
 
