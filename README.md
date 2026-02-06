@@ -56,6 +56,12 @@ bun install -g cc-brain
 cc-brain install
 ```
 
+### GitHub Packages
+```bash
+npm install -g @tripzcodes/cc-brain --registry=https://npm.pkg.github.com
+cc-brain install
+```
+
 ### Upgrade
 ```bash
 npx cc-brain@latest install
