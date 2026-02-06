@@ -15,12 +15,12 @@ The user wants to recall: `$ARGUMENTS`
 
 1. **Run the search**:
 ```bash
-bun src/recall.js "$ARGUMENTS"
+npx cc-brain recall "$ARGUMENTS"
 ```
 
 2. **For regex patterns or context**:
 ```bash
-bun src/recall.js "$ARGUMENTS" --context
+npx cc-brain recall "$ARGUMENTS" --context
 ```
 
 3. **Present the results** to the user:
