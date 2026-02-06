@@ -68,8 +68,9 @@ if (!command || command === '--help' || command === '-h') {
 }
 
 if (command === '--version' || command === '-v') {
-  const pkg = await import('../package.json', { assert: { type: 'json' } });
-  console.log(pkg.default.version);
+  const { readFileSync } = await import('fs');
+  const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf-8'));
+  console.log(pkg.version);
   process.exit(0);
 }
 
