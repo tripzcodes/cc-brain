@@ -107,6 +107,8 @@ plugin.json           - Plugin manifest
 ## Install
 
 ```bash
+npx cc-brain install       # Quickest
+# or
 npm install -g cc-brain    # Install globally
 cc-brain install           # Set up hooks + skills
 

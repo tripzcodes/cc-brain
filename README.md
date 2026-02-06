@@ -39,15 +39,15 @@ cc-brain creates a persistent memory layer that:
 
 ## Installation
 
-### npm (recommended)
+### npx (quickest)
+```bash
+npx cc-brain install
+```
+
+### npm (global)
 ```bash
 npm install -g cc-brain
 cc-brain install
-```
-
-### npx (one-liner)
-```bash
-npx cc-brain install
 ```
 
 ### bun
@@ -56,16 +56,9 @@ bun install -g cc-brain
 cc-brain install
 ```
 
-### GitHub Packages
-```bash
-npm install -g @tripzcodes/cc-brain --registry=https://npm.pkg.github.com
-cc-brain install
-```
-
 ### Upgrade
 ```bash
-npm install -g cc-brain@latest
-cc-brain install
+npx cc-brain@latest install
 ```
 
 ---
